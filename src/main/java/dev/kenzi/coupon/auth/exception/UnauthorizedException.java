@@ -1,8 +1,11 @@
 package dev.kenzi.coupon.auth.exception;
 
-public class UnauthorizedException extends RuntimeException {
+import dev.kenzi.coupon.global.error.BusinessException;
+import org.springframework.http.HttpStatus;
+
+public class UnauthorizedException extends BusinessException {
 
     public UnauthorizedException() {
-        super("유효하지 않은 인증 정보입니다");
+        super(HttpStatus.UNAUTHORIZED, "유효하지 않은 인증 정보입니다");
     }
 }

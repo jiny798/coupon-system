@@ -1,0 +1,68 @@
+### (선행) 로그인 - auth.http의 로그인을 실행해도 됨
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "kenzi@test.com",
+  "password": "password123"
+}
+
+> {%
+    client.global.set("accessToken", response.body.accessToken);
+%}
+
+### 쿠폰 생성 (생성된 couponId를 전역 변수에 자동 저장)
+POST {{host}}/api/coupons
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "선착순 100명 쿠폰",
+  "totalQuantity": 100,
+  "validFrom": "2026-01-01T00:00:00",
+  "validUntil": "2026-12-31T23:59:59"
+}
+
+> {%
+    client.global.set("couponId", response.body.id);
+%}
+
+### 쿠폰 발급 (발급 내역 id를 전역 변수에 자동 저장)
+POST {{host}}/api/coupons/{{couponId}}/issue
+Authorization: Bearer {{accessToken}}
+
+> {%
+    client.global.set("issuedCouponId", response.body.issuedCouponId);
+%}
+
+### 쿠폰 중복 발급 (409 확인용)
+POST {{host}}/api/coupons/{{couponId}}/issue
+Authorization: Bearer {{accessToken}}
+
+### 내 쿠폰 목록
+GET {{host}}/api/coupons/my
+Authorization: Bearer {{accessToken}}
+
+### 쿠폰 사용 (204)
+POST {{host}}/api/coupons/issued/{{issuedCouponId}}/use
+Authorization: Bearer {{accessToken}}
+
+### 쿠폰 재사용 (409 확인용)
+POST {{host}}/api/coupons/issued/{{issuedCouponId}}/use
+Authorization: Bearer {{accessToken}}
+
+### 존재하지 않는 쿠폰 발급 (404 확인용)
+POST {{host}}/api/coupons/99999/issue
+Authorization: Bearer {{accessToken}}
+
+### 잘못된 유효기간으로 생성 (400 확인용)
+POST {{host}}/api/coupons
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "기간이 이상한 쿠폰",
+  "totalQuantity": 100,
+  "validFrom": "2026-12-31T00:00:00",
+  "validUntil": "2026-01-01T00:00:00"
+}
