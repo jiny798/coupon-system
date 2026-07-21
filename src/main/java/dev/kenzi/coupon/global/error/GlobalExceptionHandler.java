@@ -1,6 +1,9 @@
 package dev.kenzi.coupon.global.error;
 
+import dev.kenzi.coupon.auth.exception.InvalidLoginException;
+import dev.kenzi.coupon.auth.exception.UnauthorizedException;
 import dev.kenzi.coupon.user.exception.DuplicateEmailException;
+import dev.kenzi.coupon.user.exception.UserNotFoundException;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,22 +11,33 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/**
- * 전역 예외 처리기.
- * 컨트롤러/서비스에서 던진 예외를 한 곳에서 HTTP 응답으로 변환한다.
- * 각 컨트롤러마다 try-catch를 반복하지 않기 위한 스프링의 표준 패턴.
- */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    /** 중복 이메일 → 409 Conflict */
     @ExceptionHandler(DuplicateEmailException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateEmail(DuplicateEmailException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ErrorResponse(e.getMessage()));
     }
 
-    /** @Valid 검증 실패 → 400 Bad Request (어느 필드가 왜 실패했는지 모아서 응답) */
+    @ExceptionHandler(InvalidLoginException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidLogin(InvalidLoginException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(e.getMessage()));
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorized(UnauthorizedException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(e.getMessage()));
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(e.getMessage()));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException e) {
         String message = e.getBindingResult().getFieldErrors().stream()

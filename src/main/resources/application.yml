@@ -1,3 +1,7 @@
+# Phase 0 기본 설정
+# 주의: 이 앱은 MySQL이 떠 있어야 부팅됩니다.
+#       Phase 0 - 3번 (docker-compose로 MySQL 실행)을 먼저 하세요.
+#       docker-compose에서 MYSQL_DATABASE=coupon 환경변수로 DB를 만들어주면 편합니다.
 
 spring:
   application:
@@ -11,6 +15,7 @@ spring:
 
   jpa:
     hibernate:
+      # 학습 초반에는 create로 시작하고, Phase 1 후반에 validate + 직접 DDL 관리로 바꿔보세요.
       ddl-auto: create
     properties:
       hibernate:
@@ -26,5 +31,8 @@ management:
     web:
       exposure:
         include: health, info, metrics
-server:
-  port: 8081
+
+# 로컬 개발용 시크릿. 실제 배포 시에는 환경변수로 주입해야 한다 (JWT_SECRET)
+jwt:
+  secret: ${JWT_SECRET:coupon-system-local-dev-secret-key-do-not-use-in-prod}
+  access-token-validity-ms: 3600000

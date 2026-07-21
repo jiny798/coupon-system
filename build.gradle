@@ -32,6 +32,10 @@ dependencies {
     // Spring Security 전체가 아니라 BCrypt 등 암호화 유틸만 사용
     implementation 'org.springframework.security:spring-security-crypto'
 
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
+
     runtimeOnly 'com.mysql:mysql-connector-j'
 
     compileOnly 'org.projectlombok:lombok'
