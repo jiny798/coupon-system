@@ -45,5 +45,20 @@ dependencies {
 }
 
 tasks.named('test') {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags 'concurrency'
+    }
+}
+
+tasks.register('concurrencyTest', Test) {
+    useJUnitPlatform {
+        includeTags 'concurrency'
+    }
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    outputs.upToDateWhen { false }
+    testLogging {
+        events 'passed', 'failed'
+        showStandardStreams = true
+    }
 }
