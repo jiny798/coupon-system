@@ -29,6 +29,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
+    // Spring Security 전체가 아니라 BCrypt 등 암호화 유틸만 사용
+    implementation 'org.springframework.security:spring-security-crypto'
+
     runtimeOnly 'com.mysql:mysql-connector-j'
 
     compileOnly 'org.projectlombok:lombok'
