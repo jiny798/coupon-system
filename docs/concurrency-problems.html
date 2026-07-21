@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>쿠폰 발급 동시성 문제 3가지</title>
+<style>
+  :root {
+    --bg: #f8f9fb;
+    --card: #ffffff;
+    --ink: #1a2233;
+    --muted: #667085;
+    --line: #e4e7ec;
+    --blue: #2e6fed;
+    --blue-bg: #ecf2fe;
+    --green: #1a9e6e;
+    --green-bg: #e7f6f0;
+    --red: #d92d20;
+    --red-bg: #fdecea;
+    --amber: #b54708;
+    --amber-bg: #fdf3e7;
+    --violet: #6941c6;
+    --violet-bg: #f1ecfb;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Pretendard", "Noto Sans KR", -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--ink);
+    padding: 40px 20px 80px; line-height: 1.6;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 26px; margin-bottom: 6px; }
+  .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 36px; }
+  .subtitle code { background: #eef1f5; padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+  section {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; padding: 28px; margin-bottom: 28px;
+  }
+  h2 { font-size: 19px; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; }
+  .badge {
+    font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; white-space: nowrap;
+  }
+  .b-red { background: var(--red-bg); color: var(--red); }
+  .b-amber { background: var(--amber-bg); color: var(--amber); }
+  .b-violet { background: var(--violet-bg); color: var(--violet); }
+  .b-blue { background: var(--blue-bg); color: var(--blue); }
+  .desc { color: var(--muted); font-size: 14px; margin-bottom: 22px; }
+  .desc b { color: var(--ink); }
+
+  .timeline {
+    display: grid;
+    grid-template-columns: 34px 1fr 1.05fr 1fr;
+    gap: 8px 10px;
+    align-items: stretch;
+  }
+  .tl-head {
+    font-size: 12.5px; font-weight: 700; color: var(--muted);
+    text-align: center; padding-bottom: 4px; letter-spacing: .02em;
+  }
+  .t-label {
+    font-size: 11px; color: #98a2b3; display: flex; align-items: center; justify-content: center;
+    font-weight: 600;
+  }
+  .cell { min-height: 44px; }
+  .step {
+    border-radius: 9px; padding: 9px 12px; font-size: 13px; height: 100%;
+    display: flex; flex-direction: column; justify-content: center;
+    border: 1px solid transparent;
+  }
+  .step small { font-size: 11.5px; opacity: .75; }
+  .s-read  { background: var(--blue-bg);  border-color: #c9dbfb; color: #1d4fb8; }
+  .s-ok    { background: var(--green-bg); border-color: #c2e8d8; color: #0d7a54; }
+  .s-bad   { background: var(--red-bg);   border-color: #f6c6c0; color: var(--red); font-weight: 600; }
+  .s-wait  { background: var(--amber-bg); border-color: #f2ddc0; color: var(--amber); }
+  .s-lock  { background: var(--violet-bg);border-color: #ddd2f3; color: var(--violet); }
+  .db {
+    background: #f4f6f9; border: 1px dashed #cdd5e0; border-radius: 9px;
+    padding: 9px 12px; font-size: 12.5px; color: #475467; text-align: center;
+    display: flex; flex-direction: column; justify-content: center; height: 100%;
+    font-family: "JetBrains Mono", Consolas, monospace;
+  }
+  .db.alert { background: var(--red-bg); border-color: #f0a9a1; color: var(--red); font-weight: 700; }
+  .result {
+    margin-top: 20px; border-radius: 10px; padding: 14px 18px; font-size: 14px;
+    background: var(--red-bg); color: #912018; border: 1px solid #f6c6c0;
+  }
+  .result b { color: var(--red); }
+
+  table { border-collapse: collapse; margin: 14px 0 6px; }
+  th, td {
+    border: 1px solid var(--line); padding: 10px 22px; text-align: center; font-size: 14px;
+  }
+  th { background: #f4f6f9; font-size: 13px; color: var(--muted); }
+  .yes { color: var(--green); font-weight: 700; }
+  .no  { color: var(--red); font-weight: 700; }
+  .locknote {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px;
+  }
+  .locknote > div {
+    border-radius: 10px; padding: 14px 16px; font-size: 13.5px;
+  }
+  .ln-s { background: var(--blue-bg); color: #1d4fb8; }
+  .ln-x { background: var(--violet-bg); color: var(--violet); }
+  .ln-s b, .ln-x b { display: block; margin-bottom: 4px; font-size: 14.5px; }
+  .footnote { margin-top: 14px; font-size: 13px; color: var(--muted); }
+  .footnote code { background: #eef1f5; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+  @media (max-width: 640px) {
+    .timeline { grid-template-columns: 24px 1fr 1fr; }
+    .db-col { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>쿠폰 발급 동시성 문제 3가지</h1>
+  <p class="subtitle">
+    테스트 결과: 성공 <code>129</code> / 카운터 <code>63</code> / 실패 <code>871</code> — 이 세 숫자가 각각 다른 버그의 증거다
+  </p>
+
+  <section>
+    <h2><span class="badge b-blue">기초</span> 공유락(S) vs 배타락(X)</h2>
+    <p class="desc">문제 3(데드락)을 이해하려면 이것부터. DB는 같은 행(row)에 대한 접근을 락으로 조율한다.</p>
+    <div class="locknote">
+      <div class="ln-s">
+        <b>공유락 S (Shared)</b>
+        "나 이 행을 <u>읽고 있으니</u> 그동안 아무도 고치지 마."<br>
+        여럿이 <b>동시에</b> 잡을 수 있다 — 도서관에서 같은 책을 여러 명이 열람하는 것.
+      </div>
+      <div class="ln-x">
+        <b>배타락 X (Exclusive)</b>
+        "나 이 행을 <u>고치는 중이니</u> 아무도 접근하지 마."<br>
+        <b>혼자만</b> 잡을 수 있다 — 1인 편집실. 다른 S락, X락 전부 대기.
+      </div>
+    </div>
+    <table>
+      <tr><th>이미 잡혀있는 락 ↓ \ 새로 요청 →</th><th>S 요청</th><th>X 요청</th></tr>
+      <tr><th>S락 있음</th><td class="yes">✓ 같이 가능</td><td class="no">✗ 대기</td></tr>
+      <tr><th>X락 있음</th><td class="no">✗ 대기</td><td class="no">✗ 대기</td></tr>
+    </table>
+    <p class="footnote">
+      핵심: <code>INSERT issued_coupons</code>는 외래키(coupon_id) 검증을 위해 부모인 쿠폰 행에 <b>S락</b>을 잡고,
+      카운터를 고치는 <code>UPDATE coupons</code>는 그 행에 <b>X락</b>이 필요하다. 이 조합이 문제 3을 만든다.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="badge b-red">문제 1</span> 초과 발급 — check-then-act의 틈 <span style="font-size:13px;color:var(--muted);font-weight:400">(129장 &gt; 100장)</span></h2>
+    <p class="desc">"확인"과 "저장" 사이에 남이 끼어든다. 확인 시점의 값은 저장 시점엔 이미 <b>과거</b>다.</p>
+    <div class="timeline">
+      <div class="tl-head"></div><div class="tl-head">스레드 A</div><div class="tl-head db-col">DB 상태</div><div class="tl-head">스레드 B</div>
+
+      <div class="t-label">t1</div>
+      <div class="cell"><div class="step s-read">카운터 읽음 → <b>99</b></div></div>
+      <div class="cell db-col"><div class="db">issued_quantity = 99<br>발급 내역 99건</div></div>
+      <div class="cell"></div>
+
+      <div class="t-label">t2</div>
+      <div class="cell"></div>
+      <div class="cell db-col"><div class="db">아직 그대로</div></div>
+      <div class="cell"><div class="step s-read">카운터 읽음 → <b>99</b><small>A가 커밋하기 전이라 같은 값</small></div></div>
+
+      <div class="t-label">t3</div>
+      <div class="cell"><div class="step s-ok">"99 &lt; 100, 통과!"</div></div>
+      <div class="cell db-col"><div class="db"></div></div>
+      <div class="cell"><div class="step s-ok">"99 &lt; 100, 통과!"</div></div>
+
+      <div class="t-label">t4</div>
+      <div class="cell"><div class="step s-ok">발급 내역 INSERT + 커밋</div></div>
+      <div class="cell db-col"><div class="db">발급 내역 100건</div></div>
+      <div class="cell"></div>
+
+      <div class="t-label">t5</div>
+      <div class="cell"></div>
+      <div class="cell db-col"><div class="db alert">발급 내역 101건 — 초과!</div></div>
+      <div class="cell"><div class="step s-bad">발급 내역 INSERT + 커밋</div></div>
+    </div>
+    <div class="result">이 틈을 32개 스레드가 반복해서 통과 → <b>29장 초과 발급</b>. 재고 체크에는 유니크 제약 같은 최후 방어선이 없다.</div>
+  </section>
+
+  <section>
+    <h2><span class="badge b-amber">문제 2</span> Lost Update — 증가가 증발한다 <span style="font-size:13px;color:var(--muted);font-weight:400">(카운터 63 &lt; 실제 129)</span></h2>
+    <p class="desc">JPA 더티 체킹은 <b>+1이 아니라 절대값</b>으로 쓴다: <code style="background:#eef1f5;padding:1px 5px;border-radius:4px">UPDATE coupons SET issued_quantity = 64</code>. 그래서 같은 값을 읽은 둘의 증가는 하나로 합쳐져 버린다.</p>
+    <div class="timeline">
+      <div class="tl-head"></div><div class="tl-head">스레드 A</div><div class="tl-head db-col">issued_quantity</div><div class="tl-head">스레드 B</div>
+
+      <div class="t-label">t1</div>
+      <div class="cell"><div class="step s-read">읽음 → <b>63</b></div></div>
+      <div class="cell db-col"><div class="db">63</div></div>
+      <div class="cell"><div class="step s-read">읽음 → <b>63</b></div></div>
+
+      <div class="t-label">t2</div>
+      <div class="cell"><div class="step s-ok">메모리에서 63 + 1 = <b>64</b></div></div>
+      <div class="cell db-col"><div class="db">63</div></div>
+      <div class="cell"><div class="step s-ok">메모리에서 63 + 1 = <b>64</b></div></div>
+
+      <div class="t-label">t3</div>
+      <div class="cell"><div class="step s-ok">UPDATE ... = 64, 커밋</div></div>
+      <div class="cell db-col"><div class="db">64</div></div>
+      <div class="cell"></div>
+
+      <div class="t-label">t4</div>
+      <div class="cell"></div>
+      <div class="cell db-col"><div class="db alert">64 — A의 +1이 증발</div></div>
+      <div class="cell"><div class="step s-bad">UPDATE ... = 64, 커밋<small>65가 아니라 64를 씀!</small></div></div>
+    </div>
+    <div class="result">발급은 2건인데 카운터는 +1. 이런 증발이 66번 쌓여서 <b>실제 129장 vs 장부 63장</b>. 심지어 옛날 값을 읽은 트랜잭션이 늦게 커밋하면 카운터가 <b>거꾸로 감소</b>할 수도 있다.</div>
+  </section>
+
+  <section>
+    <h2><span class="badge b-violet">문제 3</span> 데드락 — S락 둘이 X락을 서로 기다림 <span style="font-size:13px;color:var(--muted);font-weight:400">(실패 871건의 유력한 정체)</span></h2>
+    <p class="desc">
+      한 트랜잭션 안에서 실행 순서는 <b>① INSERT(쿠폰 행에 S락) → ② 커밋 직전 UPDATE(같은 행에 X락)</b>.
+      S락은 여럿이 같이 잡을 수 있다는 게 함정이 된다.
+    </p>
+    <div class="timeline">
+      <div class="tl-head"></div><div class="tl-head">스레드 A</div><div class="tl-head db-col">쿠폰 행의 락</div><div class="tl-head">스레드 B</div>
+
+      <div class="t-label">t1</div>
+      <div class="cell"><div class="step s-lock">발급 내역 INSERT<small>FK 검증 → 쿠폰 행 S락 획득</small></div></div>
+      <div class="cell db-col"><div class="db">A(S)</div></div>
+      <div class="cell"></div>
+
+      <div class="t-label">t2</div>
+      <div class="cell"></div>
+      <div class="cell db-col"><div class="db">A(S) + B(S)<br>S끼리는 공존 OK</div></div>
+      <div class="cell"><div class="step s-lock">발급 내역 INSERT<small>FK 검증 → 쿠폰 행 S락 획득</small></div></div>
+
+      <div class="t-label">t3</div>
+      <div class="cell"><div class="step s-wait">카운터 UPDATE 시도 → X락 필요<small>B의 S락이 있어서 대기...</small></div></div>
+      <div class="cell db-col"><div class="db">A: X 대기중</div></div>
+      <div class="cell"></div>
+
+      <div class="t-label">t4</div>
+      <div class="cell"></div>
+      <div class="cell db-col"><div class="db alert">서로가 서로를 기다림<br>= 사이클 완성</div></div>
+      <div class="cell"><div class="step s-wait">카운터 UPDATE 시도 → X락 필요<small>A의 S락이 있어서 대기...</small></div></div>
+
+      <div class="t-label">t5</div>
+      <div class="cell"><div class="step s-ok">살아남아서 진행</div></div>
+      <div class="cell db-col"><div class="db">MySQL 데드락 감지기 작동</div></div>
+      <div class="cell"><div class="step s-bad">강제 롤백 💥<small>→ 예외 → "실패 응답"으로 집계</small></div></div>
+    </div>
+    <div class="result">둘 다 영원히 기다리는 상황을 MySQL이 감지하고 <b>한쪽을 강제 롤백</b>. 이게 수백 번 반복된 것이 실패 871건의 정체(로 추정) — 소진돼서 거절된 게 아니라 DB가 비명을 지른 것.</div>
+  </section>
+
+  <section>
+    <h2><span class="badge b-blue">정리</span> 세 문제의 공통 뿌리</h2>
+    <p class="desc" style="margin-bottom:8px">
+      셋 다 원인은 하나 — <b>"읽고 → 판단/계산하고 → 쓰는" 과정이 원자적이지 않다</b>는 것.
+      문제 1은 판단이 낡았고, 문제 2는 계산이 낡았고, 문제 3은 그걸 락으로 조율하려다 순서가 꼬인 것이다.
+      해결책들(synchronized, 비관적/낙관적 락, Redis)은 전부 이 "읽기→쓰기 구간을 어떻게 원자적으로 만들 것인가"에 대한 서로 다른 답이다.
+    </p>
+  </section>
+</div>
+</body>
+</html>
