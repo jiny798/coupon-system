@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: coupon-system
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/coupon?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
