@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -42,6 +43,9 @@ public class Coupon {
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Version
+    private Long version;
 
     @Builder
     private Coupon(String name, int totalQuantity, LocalDateTime validFrom, LocalDateTime validUntil) {

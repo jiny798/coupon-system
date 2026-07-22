@@ -31,6 +31,9 @@ class CouponIssueConcurrencyTest {
     CouponService couponService;
 
     @Autowired
+    OptimisticCouponIssueFacade optimisticFacade;
+
+    @Autowired
     CouponRepository couponRepository;
 
     @Autowired
@@ -63,7 +66,7 @@ class CouponIssueConcurrencyTest {
             long currentUserId = userId;
             executor.submit(() -> {
                 try {
-                    couponService.issue(couponId, currentUserId);
+                    optimisticFacade.issue(couponId, currentUserId);
                     successCount.incrementAndGet();
                 } catch (Exception e) {
                     failureCount.incrementAndGet();
@@ -92,6 +95,7 @@ class CouponIssueConcurrencyTest {
         System.out.println("issuedQuantity 값 : " + coupon.getIssuedQuantity());
         System.out.println("실제 발급 내역 수 : " + actualIssuedCount);
         System.out.println("초과 발급         : " + (actualIssuedCount - TOTAL_QUANTITY) + "장");
+        System.out.println("총 재시도 횟수    : " + optimisticFacade.getTotalRetryCount());
         System.out.println("실패 원인별 집계  :");
         failureReasons.forEach((reason, count) ->
                 System.out.println("  - " + reason + ": " + count.get()));
