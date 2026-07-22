@@ -14,7 +14,6 @@ import dev.kenzi.coupon.coupon.dto.CouponCreateRequest;
 import dev.kenzi.coupon.coupon.dto.IssuedCouponResponse;
 import dev.kenzi.coupon.coupon.exception.CouponSoldOutException;
 import dev.kenzi.coupon.coupon.service.CouponService;
-import dev.kenzi.coupon.coupon.service.SynchronizedCouponIssueFacade;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,9 +39,6 @@ class CouponControllerTest {
 
     @MockBean
     CouponService couponService;
-
-    @MockBean
-    SynchronizedCouponIssueFacade couponIssueFacade;
 
     @MockBean
     JwtTokenProvider jwtTokenProvider;
@@ -96,7 +92,7 @@ class CouponControllerTest {
     @Test
     @DisplayName("쿠폰 발급 성공 시 201과 발급 내역 id를 응답한다")
     void issue_returns_201() throws Exception {
-        given(couponIssueFacade.issue(1L, 1L)).willReturn(100L);
+        given(couponService.issue(1L, 1L)).willReturn(100L);
 
         mockMvc.perform(post("/api/coupons/1/issue")
                         .header(HttpHeaders.AUTHORIZATION, AUTH))
@@ -107,7 +103,7 @@ class CouponControllerTest {
     @Test
     @DisplayName("재고가 소진된 쿠폰을 발급하면 409를 응답한다")
     void issue_returns_409_when_sold_out() throws Exception {
-        given(couponIssueFacade.issue(1L, 1L)).willThrow(new CouponSoldOutException());
+        given(couponService.issue(1L, 1L)).willThrow(new CouponSoldOutException());
 
         mockMvc.perform(post("/api/coupons/1/issue")
                         .header(HttpHeaders.AUTHORIZATION, AUTH))

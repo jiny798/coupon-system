@@ -31,9 +31,6 @@ class CouponIssueConcurrencyTest {
     CouponService couponService;
 
     @Autowired
-    SynchronizedCouponIssueFacade synchronizedFacade;
-
-    @Autowired
     CouponRepository couponRepository;
 
     @Autowired
@@ -66,7 +63,7 @@ class CouponIssueConcurrencyTest {
             long currentUserId = userId;
             executor.submit(() -> {
                 try {
-                    synchronizedFacade.issue(couponId, currentUserId);
+                    couponService.issue(couponId, currentUserId);
                     successCount.incrementAndGet();
                 } catch (Exception e) {
                     failureCount.incrementAndGet();

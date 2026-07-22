@@ -43,7 +43,7 @@ public class CouponService {
 
     @Transactional
     public Long issue(Long couponId, Long userId) {
-        Coupon coupon = couponRepository.findById(couponId)
+        Coupon coupon = couponRepository.findByIdWithPessimisticLock(couponId)
                 .orElseThrow(() -> new CouponNotFoundException(couponId));
 
         if (issuedCouponRepository.existsByCouponIdAndUserId(couponId, userId)) {
