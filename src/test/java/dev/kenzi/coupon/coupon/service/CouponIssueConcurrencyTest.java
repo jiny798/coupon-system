@@ -31,6 +31,9 @@ class CouponIssueConcurrencyTest {
     CouponService couponService;
 
     @Autowired
+    SynchronizedCouponIssueFacade synchronizedFacade;
+
+    @Autowired
     CouponRepository couponRepository;
 
     @Autowired
@@ -57,12 +60,13 @@ class CouponIssueConcurrencyTest {
         AtomicInteger successCount = new AtomicInteger();
         AtomicInteger failureCount = new AtomicInteger();
         Map<String, AtomicInteger> failureReasons = new ConcurrentHashMap<>();
+        long startTime = System.currentTimeMillis();
 
         for (long userId = 1; userId <= REQUEST_COUNT; userId++) {
             long currentUserId = userId;
             executor.submit(() -> {
                 try {
-                    couponService.issue(couponId, currentUserId);
+                    synchronizedFacade.issue(couponId, currentUserId);
                     successCount.incrementAndGet();
                 } catch (Exception e) {
                     failureCount.incrementAndGet();
@@ -77,11 +81,13 @@ class CouponIssueConcurrencyTest {
 
         latch.await();
         executor.shutdown();
+        long elapsedMs = System.currentTimeMillis() - startTime;
 
         Coupon coupon = couponRepository.findById(couponId).orElseThrow();
         long actualIssuedCount = issuedCouponRepository.count();
 
         System.out.println("======================================");
+        System.out.println("소요 시간         : " + elapsedMs + "ms");
         System.out.println("총 수량           : " + TOTAL_QUANTITY);
         System.out.println("동시 요청 수      : " + REQUEST_COUNT);
         System.out.println("성공 응답 수      : " + successCount.get());
