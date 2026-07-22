@@ -99,5 +99,6 @@ class CouponIssueConcurrencyTest {
 
         assertThat(actualIssuedCount).isEqualTo(TOTAL_QUANTITY);
         assertThat(coupon.getIssuedQuantity()).isEqualTo(TOTAL_QUANTITY);
+
     }
 }
