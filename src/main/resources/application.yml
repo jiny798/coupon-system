@@ -12,6 +12,19 @@ spring:
       host: localhost
       port: 6379
 
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: coupon-issue-consumer
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "dev.kenzi.coupon.*"
+
   datasource:
     url: jdbc:mysql://localhost:3306/coupon?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: root

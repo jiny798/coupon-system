@@ -3,7 +3,6 @@ package dev.kenzi.coupon.coupon.controller;
 import dev.kenzi.coupon.auth.support.LoginUser;
 import dev.kenzi.coupon.coupon.dto.CouponCreateRequest;
 import dev.kenzi.coupon.coupon.dto.CouponCreateResponse;
-import dev.kenzi.coupon.coupon.dto.CouponIssueResponse;
 import dev.kenzi.coupon.coupon.dto.IssuedCouponResponse;
 import dev.kenzi.coupon.coupon.service.CouponService;
 import dev.kenzi.coupon.coupon.service.RedisCouponIssueFacade;
@@ -11,7 +10,6 @@ import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,14 +35,12 @@ public class CouponController {
     }
 
     @PostMapping("/{couponId}/issue")
-    public ResponseEntity<CouponIssueResponse> issue(
+    public ResponseEntity<Void> issue(
             @PathVariable Long couponId,
             @LoginUser Long userId
     ) {
-        Long issuedCouponId = couponIssueFacade.issue(couponId, userId);
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(new CouponIssueResponse(issuedCouponId));
+        couponIssueFacade.issue(couponId, userId);
+        return ResponseEntity.accepted().build();
     }
 
     @GetMapping("/my")

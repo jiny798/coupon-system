@@ -1,10 +1,12 @@
 package dev.kenzi.coupon.coupon.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import dev.kenzi.coupon.coupon.dto.CouponCreateRequest;
 import dev.kenzi.coupon.coupon.repository.CouponRepository;
 import dev.kenzi.coupon.coupon.repository.IssuedCouponRepository;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
@@ -89,7 +91,12 @@ class CouponIssueConcurrencyTest {
 
         latch.await();
         executor.shutdown();
-        long elapsedMs = System.currentTimeMillis() - startTime;
+        long apiElapsedMs = System.currentTimeMillis() - startTime;
+
+        await().atMost(Duration.ofSeconds(15))
+                .pollInterval(Duration.ofMillis(200))
+                .until(() -> issuedCouponRepository.count() == TOTAL_QUANTITY);
+        long totalElapsedMs = System.currentTimeMillis() - startTime;
 
         long actualIssuedCount = issuedCouponRepository.count();
         String redisCount = redisTemplate.opsForValue()
@@ -98,7 +105,8 @@ class CouponIssueConcurrencyTest {
                 .size(RedisCouponIssueFacade.issuedUsersKey(couponId));
 
         System.out.println("======================================");
-        System.out.println("소요 시간         : " + elapsedMs + "ms");
+        System.out.println("API 응답 완료     : " + apiElapsedMs + "ms");
+        System.out.println("DB 반영 완료      : " + totalElapsedMs + "ms (컨슈머 처리 포함)");
         System.out.println("총 수량           : " + TOTAL_QUANTITY);
         System.out.println("동시 요청 수      : " + REQUEST_COUNT);
         System.out.println("성공 응답 수      : " + successCount.get());

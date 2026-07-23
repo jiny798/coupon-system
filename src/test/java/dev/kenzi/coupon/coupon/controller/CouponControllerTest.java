@@ -94,20 +94,17 @@ class CouponControllerTest {
     }
 
     @Test
-    @DisplayName("쿠폰 발급 성공 시 201과 발급 내역 id를 응답한다")
-    void issue_returns_201() throws Exception {
-        given(couponIssueFacade.issue(1L, 1L)).willReturn(100L);
-
+    @DisplayName("쿠폰 발급 요청이 접수되면 202를 응답한다")
+    void issue_returns_202() throws Exception {
         mockMvc.perform(post("/api/coupons/1/issue")
                         .header(HttpHeaders.AUTHORIZATION, AUTH))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.issuedCouponId").value(100));
+                .andExpect(status().isAccepted());
     }
 
     @Test
     @DisplayName("재고가 소진된 쿠폰을 발급하면 409를 응답한다")
     void issue_returns_409_when_sold_out() throws Exception {
-        given(couponIssueFacade.issue(1L, 1L)).willThrow(new CouponSoldOutException());
+        willThrow(new CouponSoldOutException()).given(couponIssueFacade).issue(1L, 1L);
 
         mockMvc.perform(post("/api/coupons/1/issue")
                         .header(HttpHeaders.AUTHORIZATION, AUTH))
