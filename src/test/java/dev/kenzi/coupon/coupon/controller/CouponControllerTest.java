@@ -14,7 +14,7 @@ import dev.kenzi.coupon.coupon.dto.CouponCreateRequest;
 import dev.kenzi.coupon.coupon.dto.IssuedCouponResponse;
 import dev.kenzi.coupon.coupon.exception.CouponSoldOutException;
 import dev.kenzi.coupon.coupon.service.CouponService;
-import dev.kenzi.coupon.coupon.service.OptimisticCouponIssueFacade;
+import dev.kenzi.coupon.coupon.service.RedisCouponIssueFacade;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +42,7 @@ class CouponControllerTest {
     CouponService couponService;
 
     @MockBean
-    OptimisticCouponIssueFacade couponIssueFacade;
+    RedisCouponIssueFacade couponIssueFacade;
 
     @MockBean
     JwtTokenProvider jwtTokenProvider;

@@ -6,7 +6,7 @@ import dev.kenzi.coupon.coupon.dto.CouponCreateResponse;
 import dev.kenzi.coupon.coupon.dto.CouponIssueResponse;
 import dev.kenzi.coupon.coupon.dto.IssuedCouponResponse;
 import dev.kenzi.coupon.coupon.service.CouponService;
-import dev.kenzi.coupon.coupon.service.OptimisticCouponIssueFacade;
+import dev.kenzi.coupon.coupon.service.RedisCouponIssueFacade;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class CouponController {
 
     private final CouponService couponService;
-    private final OptimisticCouponIssueFacade couponIssueFacade;
+    private final RedisCouponIssueFacade couponIssueFacade;
 
     @PostMapping
     public ResponseEntity<CouponCreateResponse> create(@RequestBody @Valid CouponCreateRequest request) {

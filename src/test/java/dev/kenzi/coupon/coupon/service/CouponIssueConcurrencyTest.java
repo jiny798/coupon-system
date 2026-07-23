@@ -2,12 +2,12 @@ package dev.kenzi.coupon.coupon.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.kenzi.coupon.coupon.domain.Coupon;
 import dev.kenzi.coupon.coupon.dto.CouponCreateRequest;
 import dev.kenzi.coupon.coupon.repository.CouponRepository;
 import dev.kenzi.coupon.coupon.repository.IssuedCouponRepository;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 @SpringBootTest
 @Tag("concurrency")
@@ -31,7 +32,7 @@ class CouponIssueConcurrencyTest {
     CouponService couponService;
 
     @Autowired
-    OptimisticCouponIssueFacade optimisticFacade;
+    RedisCouponIssueFacade redisFacade;
 
     @Autowired
     CouponRepository couponRepository;
@@ -39,10 +40,17 @@ class CouponIssueConcurrencyTest {
     @Autowired
     IssuedCouponRepository issuedCouponRepository;
 
+    @Autowired
+    StringRedisTemplate redisTemplate;
+
     @BeforeEach
     void cleanUp() {
         issuedCouponRepository.deleteAllInBatch();
         couponRepository.deleteAllInBatch();
+        Objects.requireNonNull(redisTemplate.getConnectionFactory())
+                .getConnection()
+                .serverCommands()
+                .flushDb();
     }
 
     @Test
@@ -66,7 +74,7 @@ class CouponIssueConcurrencyTest {
             long currentUserId = userId;
             executor.submit(() -> {
                 try {
-                    optimisticFacade.issue(couponId, currentUserId);
+                    redisFacade.issue(couponId, currentUserId);
                     successCount.incrementAndGet();
                 } catch (Exception e) {
                     failureCount.incrementAndGet();
@@ -83,8 +91,11 @@ class CouponIssueConcurrencyTest {
         executor.shutdown();
         long elapsedMs = System.currentTimeMillis() - startTime;
 
-        Coupon coupon = couponRepository.findById(couponId).orElseThrow();
         long actualIssuedCount = issuedCouponRepository.count();
+        String redisCount = redisTemplate.opsForValue()
+                .get(RedisCouponIssueFacade.issuedCountKey(couponId));
+        Long redisUserCount = redisTemplate.opsForSet()
+                .size(RedisCouponIssueFacade.issuedUsersKey(couponId));
 
         System.out.println("======================================");
         System.out.println("소요 시간         : " + elapsedMs + "ms");
@@ -92,16 +103,17 @@ class CouponIssueConcurrencyTest {
         System.out.println("동시 요청 수      : " + REQUEST_COUNT);
         System.out.println("성공 응답 수      : " + successCount.get());
         System.out.println("실패 응답 수      : " + failureCount.get());
-        System.out.println("issuedQuantity 값 : " + coupon.getIssuedQuantity());
+        System.out.println("Redis 발급 카운트 : " + redisCount);
+        System.out.println("Redis 유저 셋 크기: " + redisUserCount);
         System.out.println("실제 발급 내역 수 : " + actualIssuedCount);
         System.out.println("초과 발급         : " + (actualIssuedCount - TOTAL_QUANTITY) + "장");
-        System.out.println("총 재시도 횟수    : " + optimisticFacade.getTotalRetryCount());
         System.out.println("실패 원인별 집계  :");
         failureReasons.forEach((reason, count) ->
                 System.out.println("  - " + reason + ": " + count.get()));
         System.out.println("======================================");
 
         assertThat(actualIssuedCount).isEqualTo(TOTAL_QUANTITY);
-        assertThat(coupon.getIssuedQuantity()).isEqualTo(TOTAL_QUANTITY);
+        assertThat(Long.parseLong(Objects.requireNonNull(redisCount))).isEqualTo(TOTAL_QUANTITY);
+        assertThat(redisUserCount).isEqualTo(TOTAL_QUANTITY);
     }
 }

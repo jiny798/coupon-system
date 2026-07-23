@@ -44,6 +44,17 @@ services:
       timeout: 3s
       retries: 10
 
+  redis:
+    image: redis:7.2
+    container_name: coupon-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 # 위에서 참조한 명명된 볼륨의 선언부.
 # 실체는 Docker가 관리하는 저장 공간이고, docker volume ls 로 확인 가능.
 volumes:

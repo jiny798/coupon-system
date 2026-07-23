@@ -64,6 +64,20 @@ public class CouponService {
         }
     }
 
+    @Transactional
+    public Long recordIssuance(Long couponId, Long userId) {
+        Coupon coupon = couponRepository.getReferenceById(couponId);
+        IssuedCoupon issuedCoupon = IssuedCoupon.builder()
+                .coupon(coupon)
+                .userId(userId)
+                .build();
+        try {
+            return issuedCouponRepository.save(issuedCoupon).getId();
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicateCouponIssueException();
+        }
+    }
+
     @Transactional(readOnly = true)
     public List<IssuedCouponResponse> getMyCoupons(Long userId) {
         return issuedCouponRepository.findAllWithCouponByUserId(userId).stream()
