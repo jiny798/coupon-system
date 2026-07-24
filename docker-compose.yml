@@ -75,6 +75,33 @@ services:
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       TZ: Asia/Seoul
 
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: coupon-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - TZ=Asia/Seoul
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: coupon-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - TZ=Asia/Seoul
+    depends_on:
+      - prometheus
+
 # 위에서 참조한 명명된 볼륨의 선언부.
 # 실체는 Docker가 관리하는 저장 공간이고, docker volume ls 로 확인 가능.
 volumes:

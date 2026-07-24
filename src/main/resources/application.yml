@@ -48,7 +48,13 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, info, metrics
+        include: health, info, metrics, prometheus
+  metrics:
+    tags:
+      application: coupon-api
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
 
 # 로컬 개발용 시크릿. 실제 배포 시에는 환경변수로 주입해야 한다 (JWT_SECRET)
 jwt:
