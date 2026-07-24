@@ -48,7 +48,7 @@
 | 해결 2 | `5-pessimistic-lock` | DB 비관적 락 (`SELECT FOR UPDATE`) | ✅ **8,544ms** — 탈락자까지 전원 행 락에 직렬화 |
 | 해결 3 | `6-optimistic-lock` | DB 낙관적 락 (`@Version` + 재시도) | ✅ **7,257ms** (재시도 927회) — 소진 후 거절은 병렬 통과 |
 | 해결 4 | `7-redis` | Redis 원자 연산 (SADD + INCR) | ✅ **2,408ms** — 락/재시도 없음, 도착순 공정성 |
-| 해결 5 | `8-kafka` | Redis 판정 + Kafka 비동기 저장 | ✅ API 응답과 DB 반영 분리 (측정값은 docs 참고) |
+| 해결 5 | `8-kafka` | Redis 판정 + Kafka 비동기 저장 | ✅ **API 응답 1,359ms** / DB 반영 11,651ms (비동기) |
 
 ### 단계별로 배운 것
 
